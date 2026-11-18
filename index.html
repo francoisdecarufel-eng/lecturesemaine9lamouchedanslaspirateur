@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Le rappel - La mouche dans l'aspirateur</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6', // Blue
+                        secondary: '#F59E0B', // Amber
+                        success: '#10B981', // Green
+                        danger: '#EF4444', // Red
+                        background: '#F3F4F6', // Gray-100
+                        card: '#FFFFFF',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- ⚠️ RÈGLE BABEL OBLIGATOIRE -->
+    <script>
+      Babel.registerPreset('react-classic', {
+        presets: [
+          [Babel.availablePresets['react'], { runtime: 'classic' }]
+        ]
+      });
+    </script>
+</head>
+<body class="bg-background text-gray-800 font-sans min-h-screen">
+    <div id="root" class="min-h-screen flex flex-col"></div>
+
+    <script type="text/babel" data-type="module" data-presets="react-classic">
+        const { useState, useEffect } = React;
+
+        // --- DATA ---
+        const BOOK_INFO = {
+            title: "La mouche dans l'aspirateur",
+            author: "Mélanie Watt",
+            publisher: "Éditions Scholastic",
+            theme: "Le deuil, la gestion des émotions, la résilience."
+        };
+
+        const STAGES = [
+            { id: 1, name: "Le déni", color: "bg-blue-100 border-blue-400", correctId: 'B' },
+            { id: 2, name: "Le marchandage", color: "bg-purple-100 border-purple-400", correctId: 'D' },
+            { id: 3, name: "La colère", color: "bg-red-100 border-red-400", correctId: 'A' },
+            { id: 4, name: "Le désespoir", color: "bg-gray-200 border-gray-500", correctId: 'E' },
+            { id: 5, name: "L'acceptation", color: "bg-green-100 border-green-400", correctId: 'C' }
+        ];
+
+        const INITIAL_LABELS = [
+            { id: 'A', text: "Elle perd patience, se fâche très fort et crie après l'aspirateur." },
+            { id: 'B', text: "Elle refuse de croire qu'elle est coincée dans l'aspirateur et agit comme si tout était normal." },
+            { id: 'C', text: "Elle s'adapte à sa nouvelle maison en bricolant avec les déchets autour d'elle et aperçoit la lumière." },
+            { id: 'D', text: "Elle essaie de négocier avec l'aspirateur et fait plein de promesses pour qu'on la laisse sortir." },
+            { id: 'E', text: "Elle n'a plus d'énergie, se sent découragée dans le noir et pense qu'elle ne s'en sortira jamais." }
+        ];
+
+        // --- ICONS ---
+        const Icons = {
+            Book: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>,
+            Activity: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>,
+            Check: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>,
+            Cross: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>,
+            Info: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline text-blue-500 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>,
+            Reset: () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+        };
+
+        // --- COMPONENTS ---
+
+        const TabDiscovery = () => (
+            <div className="space-y-6 animate-fadeIn">
+                <div className="bg-card rounded-2xl shadow-lg p-6 md:p-8 border-t-8 border-primary">
+                    <h2 className="text-3xl font-bold text-gray-800 mb-4 text-center">À la découverte de l'histoire</h2>
+                    
+                    <div className="bg-blue-50 rounded-xl p-4 md:p-6 mb-6 flex flex-col md:flex-row gap-6 items-center">
+                        <div className="bg-white p-4 rounded-lg shadow-sm border-2 border-blue-200 flex-1 w-full text-lg">
+                            <p><strong className="text-blue-800">Titre :</strong> {BOOK_INFO.title}</p>
+                            <p><strong className="text-blue-800">Auteure & Illustratrice :</strong> {BOOK_INFO.author}</p>
+                            <p><strong className="text-blue-800">Édition :</strong> {BOOK_INFO.publisher}</p>
+                            <p><strong className="text-blue-800">Thèmes :</strong> {BOOK_INFO.theme}</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4 text-lg text-gray-700 leading-relaxed">
+                        <h3 className="text-2xl font-semibold text-primary border-b-2 border-primary pb-2 inline-block">Le résumé</h3>
+                        <p>
+                            Par un bel après-midi tranquille, une mouche insouciante se pose au sommet d'un globe terrestre dans le salon. 
+                            Malheureusement, c'est le jour du grand ménage ! D'une simple pression sur un bouton, l'aspirateur happe notre petite amie ailée.
+                        </p>
+                        <p>
+                            Prisonnière dans le sac poussiéreux, la mouche va passer par de grandes émotions. On appelle cela <strong>les étapes du deuil</strong>.
+                        </p>
+                        
+                        <div className="mt-6 grid grid-cols-1 md:grid-cols-5 gap-4">
+                            {STAGES.map((stage) => (
+                                <div key={stage.id} className={`${stage.color} border-2 rounded-xl p-4 text-center shadow-sm flex flex-col justify-center min-h-[100px]`}>
+                                    <span className="font-bold text-xl block mb-1">Étape {stage.id}</span>
+                                    <span className="font-semibold">{stage.name}</span>
+                                </div>
+                            ))}
+                        </div>
+                        
+                        <p className="mt-6 bg-yellow-50 p-4 rounded-xl border border-yellow-200 text-yellow-900">
+                            <Icons.Info />
+                            <strong>Savais-tu que ?</strong> Un petit chien teckel perd aussi son jouet préféré dans l'aspirateur et vit les mêmes émotions en même temps que la mouche !
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const TabActivity = () => {
+            const [availableLabels, setAvailableLabels] = useState(INITIAL_LABELS);
+            const [slots, setSlots] = useState({ 1: null, 2: null, 3: null, 4: null, 5: null });
+            const [selectedLabelId, setSelectedLabelId] = useState(null);
+            const [isValidated, setIsValidated] = useState(false);
+
+            const handleLabelSelect = (label) => {
+                if (isValidated) return;
+                // Toggle selection
+                setSelectedLabelId(prev => prev === label.id ? null : label.id);
+            };
+
+            const handleSlotClick = (stageId) => {
+                if (isValidated) return;
+
+                const currentLabelInSlot = slots[stageId];
+
+                // Case 1: Slot has a label, and no new label is selected -> Remove label from slot
+                if (currentLabelInSlot && !selectedLabelId) {
+                    setSlots(prev => ({ ...prev, [stageId]: null }));
+                    setAvailableLabels(prev => [...prev, currentLabelInSlot].sort((a, b) => a.id.localeCompare(b.id)));
+                    return;
+                }
+
+                // Case 2: A label is selected from the bank -> Place it in the slot
+                if (selectedLabelId) {
+                    const labelToPlace = availableLabels.find(l => l.id === selectedLabelId);
+                    if (labelToPlace) {
+                        setSlots(prev => {
+                            const newSlots = { ...prev };
+                            // If slot already had something, put it back in available
+                            if (newSlots[stageId]) {
+                                setAvailableLabels(currAvailable => [...currAvailable, newSlots[stageId]].sort((a, b) => a.id.localeCompare(b.id)));
+                            }
+                            newSlots[stageId] = labelToPlace;
+                            return newSlots;
+                        });
+                        setAvailableLabels(prev => prev.filter(l => l.id !== selectedLabelId));
+                        setSelectedLabelId(null); // Clear selection
+                    }
+                }
+            };
+
+            const checkAnswers = () => {
+                const allFilled = Object.values(slots).every(val => val !== null);
+                if (!allFilled) {
+                    alert("Place toutes les étiquettes avant de vérifier !"); // Using alert as fallback, but UI message is better. Replaced with on-screen message below.
+                    return;
+                }
+                setIsValidated(true);
+            };
+
+            const resetActivity = () => {
+                setAvailableLabels(INITIAL_LABELS);
+                setSlots({ 1: null, 2: null, 3: null, 4: null, 5: null });
+                setSelectedLabelId(null);
+                setIsValidated(false);
+            };
+
+            const showFillWarning = !isValidated && Object.values(slots).some(val => val === null) && Object.values(slots).some(val => val !== null);
+            const allPlaced = Object.values(slots).every(val => val !== null);
+            let score = 0;
+            if (isValidated) {
+                STAGES.forEach(stage => {
+                    if (slots[stage.id] && slots[stage.id].id === stage.correctId) score++;
+                });
+            }
+
+            return (
+                <div className="space-y-6 animate-fadeIn pb-12">
+                    <div className="bg-card rounded-2xl shadow-lg p-6 md:p-8 border-t-8 border-secondary">
+                        <div className="mb-6 bg-orange-50 p-4 rounded-xl border border-orange-200">
+                            <h2 className="text-2xl font-bold text-orange-800 mb-2">Activité : Remets de l'ordre !</h2>
+                            <p className="text-lg text-orange-900">
+                                As-tu déjà remarqué comment nos émotions changent quand nous vivons une situation difficile ? 
+                                Voyons si tu te souviens des réactions de la mouche.
+                            </p>
+                            <p className="font-semibold text-orange-900 mt-2 text-xl">
+                                📝 Consigne : Clique sur une étiquette en bas, puis clique sur la case vide correspondante.
+                            </p>
+                        </div>
+
+                        {/* Drop Zones */}
+                        <div className="space-y-4 mb-10">
+                            {STAGES.map((stage) => {
+                                const placedLabel = slots[stage.id];
+                                let feedbackClass = "";
+                                let feedbackIcon = null;
+
+                                if (isValidated && placedLabel) {
+                                    const isCorrect = placedLabel.id === stage.correctId;
+                                    feedbackClass = isCorrect ? "ring-4 ring-success bg-green-50" : "ring-4 ring-danger bg-red-50";
+                                    feedbackIcon = isCorrect ? <Icons.Check /> : <Icons.Cross />;
+                                }
+
+                                return (
+                                    <div key={stage.id} className="flex flex-col lg:flex-row gap-4 items-stretch">
+                                        {/* Stage Info */}
+                                        <div className={`${stage.color} border-2 rounded-xl p-4 flex-shrink-0 w-full lg:w-64 flex flex-col justify-center shadow-sm`}>
+                                            <span className="font-bold text-xl block">Étape {stage.id}</span>
+                                            <span className="font-semibold text-lg">{stage.name}</span>
+                                        </div>
+
+                                        {/* Slot */}
+                                        <div 
+                                            onClick={() => handleSlotClick(stage.id)}
+                                            className={`flex-1 min-h-[100px] border-4 border-dashed rounded-xl p-4 flex items-center transition-all duration-200 cursor-pointer relative
+                                                ${placedLabel ? 'border-transparent shadow-md' : 'border-gray-300 hover:border-primary hover:bg-blue-50'}
+                                                ${selectedLabelId && !placedLabel ? 'bg-blue-100 border-blue-400' : ''}
+                                                ${feedbackClass}
+                                                ${placedLabel && !isValidated ? 'bg-white border-2 border-solid border-gray-200 hover:border-red-400' : 'bg-gray-50'}
+                                            `}
+                                        >
+                                            {!placedLabel && (
+                                                <span className="text-gray-400 font-medium text-lg text-center w-full block">
+                                                    {selectedLabelId ? "Clique ici pour coller l'étiquette" : "Colle l'action de la mouche ici"}
+                                                </span>
+                                            )}
+                                            
+                                            {placedLabel && (
+                                                <div className="text-lg text-gray-800 w-full pr-10">
+                                                    <span className="font-bold mr-2 text-primary">{placedLabel.id}.</span> 
+                                                    {placedLabel.text}
+                                                    {!isValidated && (
+                                                        <span className="absolute top-2 right-2 text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full pointer-events-none">
+                                                            Clique pour retirer
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+                                            
+                                            {/* Validation Icon */}
+                                            {isValidated && feedbackIcon && (
+                                                <div className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full shadow-sm p-1">
+                                                    {feedbackIcon}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Label Bank */}
+                        {!isValidated && (
+                            <div className="bg-gray-100 p-6 rounded-2xl border-2 border-gray-200 mb-8">
+                                <h3 className="text-xl font-bold text-gray-700 mb-4 flex items-center">
+                                    ✂️ Étiquettes à placer
+                                    {selectedLabelId && <span className="ml-4 text-sm font-normal text-primary bg-blue-100 px-3 py-1 rounded-full animate-pulse">Sélectionnée, choisis une case !</span>}
+                                </h3>
+                                
+                                {availableLabels.length === 0 ? (
+                                    <div className="text-center p-4 text-gray-500 font-semibold text-lg italic">
+                                        Toutes les étiquettes sont placées !
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {availableLabels.map(label => {
+                                            const isSelected = selectedLabelId === label.id;
+                                            return (
+                                                <div 
+                                                    key={label.id}
+                                                    onClick={() => handleLabelSelect(label)}
+                                                    className={`p-4 rounded-xl cursor-pointer transition-all shadow-sm border-2 text-lg
+                                                        ${isSelected 
+                                                            ? 'bg-primary text-white border-primary transform scale-[1.02] shadow-md ring-4 ring-blue-200' 
+                                                            : 'bg-white hover:bg-blue-50 border-gray-200 hover:border-primary text-gray-800'}
+                                                    `}
+                                                >
+                                                    <div className="font-bold mb-1 opacity-70">Étiquette {label.id}</div>
+                                                    <div>{label.text}</div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Actions & Feedback */}
+                        <div className="flex flex-col items-center gap-4">
+                            {!isValidated ? (
+                                <button 
+                                    onClick={checkAnswers}
+                                    disabled={!allPlaced}
+                                    className={`px-8 py-4 rounded-2xl text-2xl font-bold transition-all shadow-lg text-white w-full md:w-auto min-w-[250px]
+                                        ${allPlaced 
+                                            ? 'bg-primary hover:bg-blue-600 hover:scale-105 active:scale-95 cursor-pointer' 
+                                            : 'bg-gray-300 cursor-not-allowed'}
+                                    `}
+                                >
+                                    Vérifier mes réponses
+                                </button>
+                            ) : (
+                                <div className="text-center w-full animate-fadeIn">
+                                    <div className={`p-6 rounded-2xl text-2xl font-bold mb-6 border-4 shadow-sm inline-block
+                                        ${score === 5 ? 'bg-green-100 border-success text-green-800' : 'bg-yellow-100 border-secondary text-yellow-800'}
+                                    `}>
+                                        {score === 5 
+                                            ? "🎉 Bravo ! C'est parfait ! Tu as bien compris l'histoire." 
+                                            : `Tu as ${score} bonne(s) réponse(s) sur 5. Regarde la correction et essaie encore !`}
+                                    </div>
+                                    <br/>
+                                    <button 
+                                        onClick={resetActivity}
+                                        className="px-8 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl text-xl font-bold transition-all shadow-md hover:scale-105 active:scale-95 inline-flex items-center"
+                                    >
+                                        <Icons.Reset /> Recommencer
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- MAIN APP COMPONENT ---
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('discovery');
+
+            return (
+                <div className="flex-1 flex flex-col">
+                    {/* Header / Navigation */}
+                    <header className="bg-white shadow-md z-10 sticky top-0">
+                        <div className="max-w-6xl mx-auto px-4 w-full">
+                            <div className="py-4 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
+                                <div>
+                                    <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 leading-tight text-center md:text-left">
+                                        <span className="text-primary block md:inline">Le rappel :</span> La mouche dans l'aspirateur
+                                    </h1>
+                                </div>
+                                <div className="bg-blue-100 text-blue-800 px-4 py-2 rounded-full font-bold text-sm">
+                                    Niveau : 4e année
+                                </div>
+                            </div>
+                            
+                            {/* Tabs */}
+                            <div className="flex justify-center md:justify-start space-x-2 md:space-x-4 pt-4 pb-0 overflow-x-auto">
+                                <button 
+                                    onClick={() => setActiveTab('discovery')}
+                                    className={`px-6 py-4 font-bold text-lg md:text-xl rounded-t-2xl transition-colors border-b-4 whitespace-nowrap
+                                        ${activeTab === 'discovery' 
+                                            ? 'bg-primary text-white border-blue-700' 
+                                            : 'bg-gray-200 text-gray-600 border-transparent hover:bg-gray-300'}`}
+                                >
+                                    <Icons.Book /> Découverte
+                                </button>
+                                <button 
+                                    onClick={() => setActiveTab('activity')}
+                                    className={`px-6 py-4 font-bold text-lg md:text-xl rounded-t-2xl transition-colors border-b-4 whitespace-nowrap
+                                        ${activeTab === 'activity' 
+                                            ? 'bg-secondary text-white border-yellow-600' 
+                                            : 'bg-gray-200 text-gray-600 border-transparent hover:bg-gray-300'}`}
+                                >
+                                    <Icons.Activity /> Activité & Corrigé
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Main Content Area */}
+                    <main className="flex-1 max-w-6xl mx-auto w-full p-4 md:p-6 mt-4">
+                        {activeTab === 'discovery' && <TabDiscovery />}
+                        {activeTab === 'activity' && <TabActivity />}
+                    </main>
+                    
+                    {/* Footer */}
+                    <footer className="bg-white border-t py-6 text-center text-gray-500 font-medium mt-auto">
+                        Activité pédagogique interactive - Français (Syntaxe / Compréhension)
+                    </footer>
+                </div>
+            );
+        };
+
+        // Render App
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+
+    <style>
+        /* Custom Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+        
+        /* Ensure touch targets are easy to hit on smartboards */
+        button {
+            touch-action: manipulation;
+        }
+    </style>
+</body>
+</html>
